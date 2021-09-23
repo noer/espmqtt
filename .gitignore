@@ -1,3 +1,5 @@
+src/config.h
+
 ### PlatformIO ###
 .pioenvs
 .piolibdeps

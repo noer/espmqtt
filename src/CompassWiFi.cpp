@@ -1,46 +1,36 @@
 #include "CompassWiFi.h"
 
-CompassWiFi::CompassWiFi(Scheduler* aS) : Task(100 * TASK_MILLISECOND, TASK_FOREVER, aS, true) {
+CompassWiFi::CompassWiFi() {
     WiFi.mode(WIFI_STA);
-    WifiMulti.addAP(DEFAULT_SSID, DEFAULT_PASSPHRASE);
+    WifiMulti.addAP(DEFAULT_SSID0, DEFAULT_PASSPHRASE0);
+    WifiMulti.addAP(DEFAULT_SSID1, DEFAULT_PASSPHRASE1);
+    WifiMulti.addAP(DEFAULT_SSID2, DEFAULT_PASSPHRASE2);
 
-    // wifiConnectHandler = WiFi.onStationModeGotIP([this](const WiFiEventStationModeGotIP& event){
-    //     Serial.printf("WIFI connected after %i ms\n", millis());
-    //     // for(auto& cb : connectCBs) {
-    //     //     Serial.println("Call CBs");
-    //     //     cb();
-    //     // }
-    //     //tMQTTConnect->restart();
-    //     //restart();
-    // });
+    wifiConnectHandler = WiFi.onStationModeGotIP([this](const WiFiEventStationModeGotIP& event){
+        Serial.printf("WIFI connected after %i ms\n", millis());
+    });
 
-    // wifiDisconnectHandler = WiFi.onStationModeDisconnected([this](const WiFiEventStationModeDisconnected& event){
-    //     Serial.println("Disconnected from Wi-Fi.");
-        
-    //     // Make sure not to connect MQTT while WiFi is disconnected
-    //     //tMQTTConnect->disable();
-    //     // for(auto& cb : disconnectCBs) {
-    //     //     cb();
-    //     // }
-    //     restartDelayed(TASK_SECOND);
-    // });
+    wifiDisconnectHandler = WiFi.onStationModeDisconnected([this](const WiFiEventStationModeDisconnected& event){
+        Serial.println("Disconnected from Wi-Fi.");
+        wifiReconnectTimer.attach_ms_scheduled(100, [this]() {
+            connectToWifi();
+        });
+    });
+
+    wifiReconnectTimer.attach_ms_scheduled(100, [this]() {
+        connectToWifi();
+    });
+
 }
 
 CompassWiFi::~CompassWiFi() {
-    disable();
+    WiFi.mode(WIFI_OFF);
+    wifi_fpm_set_sleep_type (LIGHT_SLEEP_T);
+    WiFi.forceSleepBegin(); //<-- saves like 100mA!
 }
 
-bool CompassWiFi::Callback() {
+void CompassWiFi::connectToWifi() {
     if(WifiMulti.run() == WL_CONNECTED) {
-        disable();
+        wifiReconnectTimer.detach();
     }
-    return true;
-}
-
-void CompassWiFi::onConnect(const std::function<void(void)> cb) {
-    connectCBs.push_back(cb);
-}
-
-void CompassWiFi::onDisconnect(const std::function<void(void)> cb) {
-    disconnectCBs.push_back(cb);
 }

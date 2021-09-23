@@ -1,30 +1,19 @@
 #pragma once
 
 #include <ESP8266WiFiMulti.h>
-#include <vector>
-#include <functional>
+#include <Ticker.h>
 
-#define _TASK_MICRO_RES
-#define _TASK_OO_CALLBACKS
-#include <TaskSchedulerDeclarations.h>
+#include "config.h"
 
-#define DEFAULT_SSID        "noers"
-#define DEFAULT_PASSPHRASE  "JesusMySavior"
-//#define DEFAULT_SSID        "CompassOTA"
-//#define DEFAULT_PASSPHRASE  "CommitYourWayPS37:5"
-
-class CompassWiFi : Task {
+class CompassWiFi {
 private:
     ESP8266WiFiMulti WifiMulti;
     WiFiEventHandler wifiConnectHandler;
     WiFiEventHandler wifiDisconnectHandler;
-    std::vector<std::function<void(void)>> connectCBs;
-    std::vector<std::function<void(void)>> disconnectCBs;
+    Ticker wifiReconnectTimer;
+    void connectToWifi();
 
 public:
-    CompassWiFi(Scheduler* aS);
+    CompassWiFi();
     ~CompassWiFi();
-    bool Callback();
-    void onConnect(const std::function<void(void)> cb);
-    void onDisconnect(const std::function<void(void)> cb);
 };
